@@ -253,7 +253,8 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
       argTypes: [
         { name: "rowForSupabase", type: "object", displayName: "Row object to send to Supabase" },
         { name: "optimisticRow", type: "object", displayName: "Optimistic new row object (optional)"},
-        { name: "shouldReturnRow", type: "boolean", displayName: "Return added row/s? (Returns [] if false)"}
+        { name: "shouldReturnRow", type: "boolean", displayName: "Return added row/s? (Returns [] if false)"},
+        { name: "disableRefetchAfterMutation", type:"boolean", displayName: "Disable refetch data after row added?"},
       ],
     },
     editRow: {

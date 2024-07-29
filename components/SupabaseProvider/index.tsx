@@ -21,7 +21,10 @@ type RowWithoutId = {
     [key: string]: any;
 }
   
-type Rows = Row[] | null;
+type Rows = {
+    count: number
+    data: Row[] | null
+};
 
 type SupabaseProviderError = {
     errorId: string;
@@ -34,8 +37,8 @@ type SupabaseProviderError = {
 }
 
 interface Actions {
-    //TODO: with optionality turned off (ie. no .select() after the .insert or .update), would add and edit return null or the standard api response code like 200 etc?
-    addRow(rowForSupabase: any, optimisticRow: any): Promise<Rows | null | SupabaseProviderError>;
+    //TODO: with optionality turned off (ie. no .select() after the .insert or .update), would add and edit return null or the standard api response code like 200 etc? A: Rows can be null and also it could be an empty Array of Rows. 
+    addRow(rowForSupabase: any, optimisticRow: any, shouldReturnRow: boolean, disableRefetchAfterMutation: boolean): Promise<Rows | SupabaseProviderError>; //negative bool arg naming because plasmic doesn't allow default values for action args
     editRow(rowForSupabase: any, optimisticRow: any): Promise<Row | SupabaseProviderError>;
     deleteRow(id: any): Promise<Row | SupabaseProviderError>;
 }
@@ -80,7 +83,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
 
             setIsMutating(false);
             setFetchError(null);
-
+            
             try {
                 //Create new supabase client
                 const supabase = createClient();
@@ -109,6 +112,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
 
             } catch(err) {
                 //build the error object
+                console.error(err)
                 const supabaseProviderError = {
                     errorId: uuid(),
                     summary: 'Error fetching records',
@@ -158,9 +162,25 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         //TODO - Add optimistic update functions
         //Function to add a row to existing data optimistically
         const addRowOptimistically = useCallback(
-            (currentRows: Rows, optimisticRecord: RowWithoutId | Row ) => {
-                const optimisticRecords = [...(currentRows || []), optimisticRecord];
-                return optimisticRecords;
+            (currentRows: Rows, optimisticRow: RowWithoutId | Row ) => {
+                console.log(currentRows)
+                console.log(optimisticRow)
+                console.log(Array.isArray(optimisticRow))
+                const optimisticRows = [...(currentRows.data || []), optimisticRow];
+                let optimisticCount
+                    if (currentRows.count === null) {
+                        optimisticCount = null
+                    }
+                    else if (Array.isArray(optimisticRow)) {
+                        optimisticCount = currentRows.count + optimisticRow.length
+                    }
+                    else {
+                        optimisticCount = currentRows.count + 1
+                    }
+                console.log(optimisticRows)
+                const optimisticReturn = {count: optimisticCount, data: optimisticRows}
+                console.log(optimisticReturn)
+                return optimisticReturn;
             },
             []
         );
@@ -223,8 +243,8 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         //Define element actions to run from Plasmic Studio
         useImperativeHandle(ref, () => ({
             //Element action to add a record with optional optimistic update & auto-refetch when done
-            addRow: async (rowForSupabase, optimisticRow, shouldReturnRow) => {
-            setIsMutating(true);
+            addRow: async (rowForSupabase, optimisticRow, shouldReturnRow = false, disableRefetchAfterMutation = false) => { // default values for backward compatibility
+                setIsMutating(true);
     
                 //Choose the optimistic function based on whether the user has specified optimisticRow
                 //No optimisticRow means the returnUnchangedData func will be used, disabling optimistic update
@@ -241,12 +261,13 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                     const result = await mutate(addRow(rowForSupabase, shouldReturnRow), {
                     optimisticData: (currentRows: Rows) => optimisticFunc(currentRows, optimisticRow),
                     populateCache: false,
-                    revalidate: true,
+                    revalidate: !disableRefetchAfterMutation,
                     rollbackOnError: true
                     });
                     return result;
         
                 } catch(err) {
+                    console.error(err)
                     const supabaseProviderError = {
                     errorId: uuid(),
                     summary: 'Error adding row',
