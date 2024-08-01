@@ -270,10 +270,12 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
         { name: "shouldReturnRow", type: "boolean", displayName: "Return added row/s? (Returns [] if false)"},
       ],
     },
-    createRow: {
+    addRow: {
       description: "add a row",
       argTypes: [
-        { name: "returnMutatedRow", type: "boolean"},
+        { name: "rowForSupabase", type: "object", displayName: "Row object to send to Supabase"},
+        { name: "shouldReturnRow", type: "boolean", displayName: "Return mutated row/s? (Returns [] if false)"},
+        { name: "awaitResponse", type: "boolean"}
       ],
     },
     editRow: {

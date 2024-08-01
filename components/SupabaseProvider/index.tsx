@@ -37,7 +37,7 @@ type MutationResponse = {
 
 interface Actions {
     //TODO: with optionality turned off (ie. no .select() after the .insert or .update), would add and edit return null or the standard api response code like 200 etc? A: Rows can be null and also it could be an empty Array of Rows. 
-    addRow(rowForSupabase: any, shouldReturnRow: boolean): Promise<MutationResponse>;
+    addRow(rowForSupabase: any, shouldReturnRow: boolean, awaitResponse: boolean): Promise<MutationResponse>;
     editRow(rowForSupabase: any, shouldReturnRow: boolean): Promise<MutationResponse>;
     deleteRow(id: any, shouldReturnRow: boolean): Promise<MutationResponse>;
     refetchRows(): Promise<void>;
@@ -351,8 +351,11 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         //Define element actions to run from Plasmic Studio
         useImperativeHandle(ref, () => ({
             //Element action to add a record & auto-refetch when done
-            addRow: async (rowForSupabase, shouldReturnRow = false) => { // default values for backward compatibility
+            addRow: async (rowForSupabase, shouldReturnRow, awaitResponse) => { // default values for backward compatibility
                 setIsMutating(true);
+                console.log(rowForSupabase)
+                console.log(shouldReturnRow)
+                console.log(awaitResponse)        
         
                 //Run the mutation
                 try {
