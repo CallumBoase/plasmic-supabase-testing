@@ -16,6 +16,11 @@ export type Filter = {
   value2: any; //2nd value needed for some filters
 };
 
+export type OrderBy = {
+  fieldName: any;
+  direction: "asc" | "desc";
+};
+
 export type BuildSupabaseQueryWithDynamicFiltersProps = {
   supabase: SupabaseClient;
   tableName: string;
@@ -23,6 +28,7 @@ export type BuildSupabaseQueryWithDynamicFiltersProps = {
   columns: string | null | undefined;
   dataForSupabase: any;
   filters: Filter[] | undefined;
+  orderBy: OrderBy[] | undefined;
   limit?: number;
   offset?: number;
   returnCount?: "none" | "exact" | "planned" | "estimated";
@@ -35,6 +41,7 @@ const buildSupabaseQueryWithDynamicFilters = ({
   columns,
   dataForSupabase,
   filters,
+  orderBy,
   limit,
   offset,
   returnCount = "none",
@@ -86,6 +93,13 @@ const buildSupabaseQueryWithDynamicFilters = ({
         throw new Error("Invalid filter operator");
       }
     });
+  }
+
+  //Order the result if present
+  if (operation === "select" && orderBy && orderBy.length > 0) {
+    orderBy.forEach((orderField) => {
+      supabaseQuery = supabaseQuery.order(orderField.fieldName, { ascending: (orderField.direction === "asc") })
+    })
   }
 
   //Apply limit and offset if the operation is a select operation. 

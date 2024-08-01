@@ -125,6 +125,25 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
       description:
         "Filters to execute during the query. Acceptable values are eq, neq, gt, lt, gte, lte.",
     },
+    orderBy: {
+      type: "array",
+      itemType: {
+        type: "object",
+        fields: {
+          fieldName: "string",
+          direction: {
+            type: "choice",
+            options:  [
+              {label: "Ascending",value: "asc"}, 
+              {label: "Descending",value: "desc"}
+            ],
+          },
+        },
+      },
+      displayName: "Order by",
+      description:
+        "Columns to order the results by during the query.",
+    },
     limit: {
       type: "number",
       step: 1,
@@ -191,7 +210,7 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
       type: "boolean",
       advanced: true,
     },
-    generateRandomErrors: {
+    simulateRandomMutationErrors: {
       type: "boolean",
       advanced: true,
     },
@@ -240,28 +259,28 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
         { name: "sortDirection", type: "string" },
       ],
     },
-    refetchData: {
+    refetchRows: {
       description: "refetch rows from the database",
       argTypes: [],
     },
     deleteRow: {
       description: "delete a row by ID",
-      argTypes: [{ name: "ID", type: "string", displayName: "Id / unique identifier of the row to delete" }],
+      argTypes: [
+        { name: "ID", type: "string", displayName: "Id / unique identifier of the row to delete" },
+        { name: "shouldReturnRow", type: "boolean", displayName: "Return added row/s? (Returns [] if false)"},
+      ],
     },
-    addRow: {
+    createRow: {
       description: "add a row",
       argTypes: [
-        { name: "rowForSupabase", type: "object", displayName: "Row object to send to Supabase" },
-        { name: "optimisticRow", type: "object", displayName: "Optimistic new row object (optional)"},
-        { name: "shouldReturnRow", type: "boolean", displayName: "Return added row/s? (Returns [] if false)"},
-        { name: "disableRefetchAfterMutation", type:"boolean", displayName: "Disable refetch data after row added?"},
+        { name: "returnMutatedRow", type: "boolean"},
       ],
     },
     editRow: {
       description: "edit row",
       argTypes: [
         { name: "rowForSupabase", type: "object", displayName: "Row object to send to Supabase"},
-        { name: "optimisticRow", type: "object", displayName: "Optimistic edited row object (optional)"},
+        { name: "shouldReturnRow", type: "boolean", displayName: "Return edited row/s? (Returns [] if false)"},
       ],
     },
     flexibleMutation: {
@@ -275,27 +294,14 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
           type: "object", 
           displayName: "Filters for update/delete (array of objects eg {fieldName: 'id', operator: 'eq', value: 1, value2: null})" 
         },
-        { 
-          name: "optimisticOperation", 
-          type: "string", 
-          displayName: "Optimistic operation (addRow / editRow / deleteRow / replaceData) (optional)",
-        },
-        { name: "optimisticData", type: "object", displayName: "Data for optimistic operation (optional)" },
+        { name: "shouldReturnRow", type: "boolean", displayName: "Return mutated row/s? (Returns [] if false)"},
       ],
     },
     runRpc: {
       description: 'RPC for add row',
       argTypes: [
         { name: "rpcName", displayName: 'Name of the RPC', type: "string" },
-        { name: "dataForSupabase", displayName: 'Data for Supabase API call', type: "object"},
-        { 
-          //Choose the optimistic operation to perform
-          //Done in plain text since "choice" type doesn't work in refActions
-          name: "optimisticOperation", 
-          displayName: 'Optimistic operation (addRow / editRow / deleteRow / replaceData) (optional)', 
-          type: "string" 
-        },
-        { name: "optimisticData", displayName: 'Data for optimistic operation (optional)', type: 'object'},
+        { name: "args", displayName: 'Arguments object for database function', type: "object"},
       ]
     },
     clearError: {

@@ -8,21 +8,16 @@ import { useDeepCompareMemo } from "use-deep-compare";
 //Import custom createClient that creates the Supabase client based on component render within Plasmic vs Browser
 import createClient from "../../utils/supabase/component";
 
-import buildSupabaseQueryWithDynamicFilters, { type Filter } from "../../utils/buildSupabaseQueryWithDynamicFilters";
+import buildSupabaseQueryWithDynamicFilters, { type Filter, type OrderBy } from "../../utils/buildSupabaseQueryWithDynamicFilters";
 
 
 //Declare types
 type Row = {
-    id: string
     [key: string]: any;
   };
-
-type RowWithoutId = {
-    [key: string]: any;
-}
   
 type Rows = {
-    count: number
+    count?: number
     data: Row[] | null
 };
 
@@ -32,15 +27,31 @@ type SupabaseProviderError = {
     errorObject: any;
     actionAttempted: string;
     recordId: string | null;
-    rowForSupabase: Row | RowWithoutId | null;
-    optimisticRow: Row | RowWithoutId | null;
+    rowForSupabase: Row | Rows | null;
+}
+
+type MutationResponse = {
+    data: Row | Rows | null
+    error: SupabaseProviderError | null
 }
 
 interface Actions {
     //TODO: with optionality turned off (ie. no .select() after the .insert or .update), would add and edit return null or the standard api response code like 200 etc? A: Rows can be null and also it could be an empty Array of Rows. 
-    addRow(rowForSupabase: any, optimisticRow: any, shouldReturnRow: boolean, disableRefetchAfterMutation: boolean): Promise<Rows | SupabaseProviderError>; //negative bool arg naming because plasmic doesn't allow default values for action args
-    editRow(rowForSupabase: any, optimisticRow: any): Promise<Row | SupabaseProviderError>;
-    deleteRow(id: any): Promise<Row | SupabaseProviderError>;
+    addRow(rowForSupabase: any, shouldReturnRow: boolean): Promise<MutationResponse>;
+    editRow(rowForSupabase: any, shouldReturnRow: boolean): Promise<MutationResponse>;
+    deleteRow(id: any, shouldReturnRow: boolean): Promise<MutationResponse>;
+    refetchRows(): Promise<void>;
+    flexibleMutation(
+        tableName: string,
+        operation: "insert" | "update" | "delete" | "upsert",
+        dataForSupabase: any,
+        filters: Filter[] | undefined,
+        shouldReturnRow: boolean,
+      ): Promise<MutationResponse>;
+      runRpc(
+        rpcName: string,
+        args: any,
+      ): Promise<any>;
 }
 
 export interface SupabaseProviderProps {
@@ -48,8 +59,10 @@ export interface SupabaseProviderProps {
     tableName: string;
     columns: string;
     filters: Filter[];
+    orderBy: OrderBy[]
     limit?: number;
     offset?: number;
+    uniqueIdentifierField: string;
     returnCount?: "none" | "exact" | "planned" | "estimated";
     onError?: ( supabaseProviderError: SupabaseProviderError ) => void;
     simulateRandomMutationErrors: boolean;
@@ -65,8 +78,10 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
             tableName,
             columns,
             filters,
+            orderBy,
             limit,
             offset,
+            uniqueIdentifierField,
             returnCount,
             onError,
             simulateRandomMutationErrors,
@@ -96,6 +111,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                     columns,
                     dataForSupabase: null,
                     filters: memoizedFilters,
+                    orderBy,
                     limit,
                     offset,
                     returnCount,
@@ -119,7 +135,6 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                     errorObject: err,
                     actionAttempted: 'read',
                     rowForSupabase: null,
-                    optimisticRow: null,
                     recordId: null,
                 };
 
@@ -152,38 +167,6 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
             mutate();
         }, [tableName, columns, memoizedFilters, limit, offset, returnCount]);
 
-        //Function that just returns the data unchanged
-        //To pass in as an optimistic update function when no optimistic update is desired
-        //Effectively disabling optimistic updates for the operation
-        function returnUnchangedData(data: Rows) {
-            return data;
-        }
-
-        //TODO - Add optimistic update functions
-        //Function to add a row to existing data optimistically
-        const addRowOptimistically = useCallback(
-            (currentRows: Rows, optimisticRow: RowWithoutId | Row ) => {
-                console.log(currentRows)
-                console.log(optimisticRow)
-                console.log(Array.isArray(optimisticRow))
-                const optimisticRows = [...(currentRows.data || []), optimisticRow];
-                let optimisticCount
-                    if (currentRows.count === null) {
-                        optimisticCount = null
-                    }
-                    else if (Array.isArray(optimisticRow)) {
-                        optimisticCount = currentRows.count + optimisticRow.length
-                    }
-                    else {
-                        optimisticCount = currentRows.count + 1
-                    }
-                console.log(optimisticRows)
-                const optimisticReturn = {count: optimisticCount, data: optimisticRows}
-                console.log(optimisticReturn)
-                return optimisticReturn;
-            },
-            []
-        );
 
         //Function to actually add row to Supabase via an API call
         const addRow = useCallback(
@@ -215,56 +198,170 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
             [tableName, simulateRandomMutationErrors]
         );
 
-        //Helper function to choose the correct optimistic data function to run
-        function chooseOptimisticFunc(
-            optimisticOperation: string | null | undefined,
-            elementActionName: string
-        ) {
-            if (optimisticOperation === "addRow") {
-            return addRowOptimistically;
-            //} else if (optimisticOperation === "editRow") {
-            //return editRowOptimistically;
-            //} else if (optimisticOperation === "deleteRow") {
-            //return deleteRowOptimistically;
-            } else {
-            //None of the above, but something was specified
-            if (optimisticOperation) {
-                throw new Error(`
-                    Invalid optimistic operation specified in "${elementActionName}" element action.
-                    You specified  "${optimisticOperation}" but the allowed values are "addRow", "editRow", "deleteRow" or left blank for no optimistic operation.
-                `);
+        //Function to actually edit row in Supabase via an API call
+        const editRow = useCallback(
+            async (rowForSupabase: Row, shouldReturnRow: boolean) : Promise<Rows> => {
+      
+              if(simulateRandomMutationErrors && Math.random() > 0.5) {
+                //1 second delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                throw new Error('Simulated error editing record');
+              }
+      
+              //Update the record in Supabase
+              const supabase = createClient();
+
+              let query = supabase
+                .from(tableName)
+                .update(rowForSupabase)
+                .eq(uniqueIdentifierField, rowForSupabase[uniqueIdentifierField])
+              
+              if (shouldReturnRow) { query = query.select() }
+            
+              const { data, error } = await query;
+
+              if (error) {
+                throw error;
+              }                                     
+              
+              return shouldReturnRow ?  data : [] //if not specified to return the added row, return an empty array to indicate success
+            },
+            [tableName, simulateRandomMutationErrors, uniqueIdentifierField]
+        );
+
+        //Function to actually delete row in Supabase via an API call
+        const deleteRow = useCallback(
+            async (uniqueIdentifierValue: number | string, shouldReturnRow: boolean) : Promise<Rows> => {
+      
+              if(simulateRandomMutationErrors && Math.random() > 0.5) {
+                //1 second delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                throw new Error('Simulated error deleting record');
+              }
+      
+              //Update the record in Supabase
+              const supabase = createClient();
+
+              let query = supabase
+                .from(tableName)
+                .delete()
+                .eq(uniqueIdentifierField, uniqueIdentifierValue)
+              
+              if (shouldReturnRow) { query = query.select() }
+            
+              const { data, error } = await query;
+
+              if (error) {
+                throw error;
+              }                                     
+              
+              return shouldReturnRow ?  data : [] //if not specified to return the added row, return an empty array to indicate success
+            },
+            [tableName, simulateRandomMutationErrors, uniqueIdentifierField]
+        );
+
+        const flexibleMutation = useCallback(
+            async (
+              tableName: string,
+              operation: "insert" | "update" | "delete" | "upsert",
+              dataForSupabase: Row,
+              filters: Filter[] | undefined,
+              shouldReturnRow: boolean
+            ) : Promise<Rows> => {
+
+            if(simulateRandomMutationErrors && Math.random() > 0.5) {
+                //1 second delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                throw new Error('Simulated error deleting record');
             }
-  
-            //Nothing specified, function that does not change data (ie no optimistic operation)
-            return returnUnchangedData;
-            }
-        }
+      
+              //New supabase client
+              const supabase = createClient();
+      
+              //Check for obvious errors
+              if( ["insert", "update", "upsert", "delete"].includes(operation) === false ) {
+                throw new Error('Flexible query error: Invalid operation. Allowed options are "insert", "update", "upsert", or "delete"');
+              }
+      
+              if(operation !== "delete" && !dataForSupabase) {
+                throw new Error('Flexible query error: You must provide dataForSupabase when running operations: insert, update or upsert.');
+              }
+      
+              if(operation === "delete" || operation === "update") {
+                if(!filters || filters.length === 0) {
+                  throw new Error('Flexible query error: You must provide at least one filter when running operations: update or delete.');
+                }
+              }
+      
+              //Build the flexible mutation
+              let query = buildSupabaseQueryWithDynamicFilters({
+                supabase,
+                tableName,
+                operation,
+                columns: null,
+                dataForSupabase,
+                filters
+              });
+      
+              //Run the flexible mutation
+              if (shouldReturnRow) { query = query.select() }
+              
+              const { data, error } = await query;
+              
+              if (error) {
+                throw error;
+              }                                     
+              
+              return shouldReturnRow ?  data : [] //if not specified to return the added row, return an empty array to indicate success
+            },
+            [simulateRandomMutationErrors]
+        )
+
+        //Function to run an RPC (database function) in supabase
+        const rpc = useCallback(
+            async (
+            rpcName: string,
+            args: any,
+            ) => {
+    
+                if(simulateRandomMutationErrors && Math.random() > 0.5) {
+                    //1 second delay
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    throw new Error('Simulated error deleting record');
+                }
+        
+                //Run the RPC
+                const supabase = createClient();
+
+                let query = supabase.rpc(rpcName, args);
+                const { data, error } = await query;
+
+                console.log(data)
+                console.error(error)
+                
+                if (error) {
+                    throw error;
+                }                                                   
+                return data //if the function returns void, this would currently by null. Error would also be null.
+            },
+            [simulateRandomMutationErrors]
+        );
+
 
         //Define element actions to run from Plasmic Studio
         useImperativeHandle(ref, () => ({
-            //Element action to add a record with optional optimistic update & auto-refetch when done
-            addRow: async (rowForSupabase, optimisticRow, shouldReturnRow = false, disableRefetchAfterMutation = false) => { // default values for backward compatibility
+            //Element action to add a record & auto-refetch when done
+            addRow: async (rowForSupabase, shouldReturnRow = false) => { // default values for backward compatibility
                 setIsMutating(true);
-    
-                //Choose the optimistic function based on whether the user has specified optimisticRow
-                //No optimisticRow means the returnUnchangedData func will be used, disabling optimistic update
-                let optimisticOperation = optimisticRow ? "addRow" : null;
-                const optimisticFunc = chooseOptimisticFunc(
-                    optimisticOperation,
-                    "Add Row"
-                );
-        
-                optimisticRow = { ...optimisticRow, optimisticId: uuid(), isOptimistic: true };
         
                 //Run the mutation
                 try {
                     const result = await mutate(addRow(rowForSupabase, shouldReturnRow), {
-                    optimisticData: (currentRows: Rows) => optimisticFunc(currentRows, optimisticRow),
                     populateCache: false,
-                    revalidate: !disableRefetchAfterMutation,
+                    revalidate: true,
                     rollbackOnError: true
                     });
-                    return result;
+                    return { data: result, error: null };
         
                 } catch(err) {
                     console.error(err)
@@ -274,16 +371,168 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                     errorObject: err,
                     actionAttempted: 'insert',
                     rowForSupabase: rowForSupabase || null,
-                    optimisticRow: optimisticRow || null,
                     recordId: null
                     };
                     if (onError && typeof onError === 'function') {
                         onError(supabaseProviderError);
                     }
-                    return { error: supabaseProviderError };
+                    return { data: null, error: supabaseProviderError };
                 }
             },
-        }));
+
+            //Element action to edit a record and auto-refetch when done
+            editRow: async (rowForSupabase, shouldReturnRow = false) => { // default values for backward compatibility
+                setIsMutating(true);
+        
+                //Run the mutation
+                try {
+                    const result = await mutate(editRow(rowForSupabase, shouldReturnRow), {
+                    populateCache: false,
+                    revalidate: true,
+                    rollbackOnError: true
+                    });
+                    return { data: result, error: null };
+        
+                } catch(err) {
+                    console.error(err)
+                    const supabaseProviderError = {
+                    errorId: uuid(),
+                    summary: 'Error editing row',
+                    errorObject: err,
+                    actionAttempted: 'update',
+                    rowForSupabase: rowForSupabase || null,
+                    recordId: rowForSupabase[uniqueIdentifierField]
+                    };
+                    if (onError && typeof onError === 'function') {
+                        onError(supabaseProviderError);
+                    }
+                    return { data: null, error: supabaseProviderError };
+                }
+            },
+        
+
+            //Element action to delete a record and auto-refetch when done
+            deleteRow: async (uniqueIdentifierValue, shouldReturnRow = false) => { // default values for backward compatibility
+                setIsMutating(true);
+        
+                //Run the mutation
+                try {
+                    const result = await mutate(deleteRow(uniqueIdentifierValue, shouldReturnRow), {
+                    populateCache: false,
+                    revalidate: true,
+                    rollbackOnError: true
+                    });
+                    return { data: result, error: null };
+        
+                } catch(err) {
+                    console.error(err)
+                    const supabaseProviderError = {
+                    errorId: uuid(),
+                    summary: 'Error deleting row',
+                    errorObject: err,
+                    actionAttempted: 'delete',
+                    rowForSupabase: null,
+                    recordId: uniqueIdentifierValue
+                    };
+                    if (onError && typeof onError === 'function') {
+                        onError(supabaseProviderError);
+                    }
+                    return { data: null, error: supabaseProviderError };
+                }
+            },
+
+            //Element action to simply refetch the data with the fetcher
+            refetchRows: async () => {
+                try {
+                    mutate()
+                } catch(err) {
+                    console.error(err)
+                    const supabaseProviderError = {
+                    errorId: uuid(),
+                    summary: 'Error refetching rows',
+                    errorObject: err,
+                    actionAttempted: 'read',
+                    rowForSupabase: null,
+                    recordId: null
+                    };
+                    if (onError && typeof onError === 'function') {
+                        onError(supabaseProviderError);
+                    }
+                    return { data: null, error: supabaseProviderError };
+                }
+            },
+
+            //Element action to run a more flexible mutation with less checks auto-refetch when done
+            flexibleMutation: async (
+                tableName,
+                operation,
+                dataForSupabase,
+                filters,
+                shouldReturnRow = false
+            ) => { // default values for backward compatibility
+                setIsMutating(true);
+        
+                //Run the mutation
+                try {
+                    const result = await mutate(flexibleMutation(tableName, operation, dataForSupabase, filters, shouldReturnRow), {
+                    populateCache: false,
+                    revalidate: true,
+                    rollbackOnError: true
+                    });
+                    return { data: result, error: null };
+        
+                } catch(err) {
+                    console.error(err)
+                    const supabaseProviderError = {
+                    errorId: uuid(),
+                    summary: 'Error with flexible mutation',
+                    errorObject: err,
+                    actionAttempted: operation,
+                    rowForSupabase: dataForSupabase || null,
+                    recordId: null //filters?.forEach((filter) => {filter.fieldName, filter.value, filter.value2})
+                    };
+                    if (onError && typeof onError === 'function') {
+                        onError(supabaseProviderError);
+                    }
+                    return { data: null, error: supabaseProviderError };
+                }
+            },
+
+            runRpc: async (
+                rpcName, 
+                args,
+            ) => {
+                setIsMutating(true);
+
+                //Run the mutation
+                try {
+                    const result = await mutate(rpc(rpcName, args), {
+                    populateCache: false,
+                    revalidate: true,
+                    rollbackOnError: true
+                    });
+                    return { data: result, error: null };
+        
+                } catch(err) {
+                    console.error(err)
+                    const supabaseProviderError = {
+                    errorId: uuid(),
+                    summary: 'Error with RPC',
+                    errorObject: err,
+                    actionAttempted: "rpc",
+                    rowForSupabase: args || null,
+                    recordId: null
+                    };
+                    if (onError && typeof onError === 'function') {
+                        onError(supabaseProviderError);
+                    }
+                    return { data: null, error: supabaseProviderError };
+                }
+            },
+
+
+        }
+    ));
     
 
         return (
