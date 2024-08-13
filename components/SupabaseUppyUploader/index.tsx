@@ -5,7 +5,7 @@
 //Supabase Uppy Tus example this is based on https://github.com/supabase/supabase/blob/master/examples/storage/resumable-upload-uppy/README.md
 
 //React
-import React, { useEffect, useState, useCallback, forwardRef, useImperativeHandle, Suspense } from "react";
+import React, { useEffect, useState, useCallback, forwardRef, useImperativeHandle, Suspense, createContext, useContext, ReactNode } from "react";
 
 //Uppy - types
 //Other Uppy imports done using dynamic import in initUppy due to conflicts with ES modules and Commonjs when compiling this package into commonjs
@@ -133,12 +133,18 @@ export const SupabaseUppyUploader = forwardRef<SupabaseUppyUploaderActions, Supa
     loading
   }: SupabaseUppyUploaderProps, ref) {
 
+    const context = useContext(UppyContext);
+    if (!context) {
+      throw new Error("SupabaseUppyUploader must be used within a SupabaseUppyHOC");
+    }
+    const { uppy, ready, setReady, initialFileLoadCompleted, setInitialFileLoadCompleted } = context;
+
     //States
-    const [ready, setReady] = useState(false);
+    //const [ready, setReady] = useState(false);
     const [initialFileLoadStarted, setInitialFileLoadStarted] = useState(false);
-    const [initialFileLoadCompleted, setInitialFileLoadCompleted] = useState(false);
-    const [uppy, setUppy] = useState<Uppy | null>();
+    //const [initialFileLoadCompleted, setInitialFileLoadCompleted] = useState(false);
     const [reset, setReset] = useState<number>(Math.random());
+
     
     //Create state for initialFilePaths that will NEVER change, so we don't re-render if it changes
     const [initialFilePathsState] = useState(initialFilePaths);
@@ -225,32 +231,13 @@ export const SupabaseUppyUploader = forwardRef<SupabaseUppyUploaderActions, Supa
           //Wait until all have completed and then take the above action
         }
       }
-    }, [uppy, ready, initialFileLoadCompleted, onValueChangeCallback, onStatusChangeCallback]);
+    }, [uppy, ready, setReady, initialFileLoadCompleted, onValueChangeCallback, onStatusChangeCallback]);
 
     //Callback to run when various processing events occur in Uppy
     const runOnvalueChangeCallback = useCallback(() => {
       //Report the new value back to the parent component
       onValueChangeCallback(formatValues(uppy?.getFiles()));
     }, [uppy, onValueChangeCallback]);
-
-    //SETUP UPPY ON INITIAL RENDER
-    useEffect(() => {
-
-      //Get the bearer token for Supabase, which will be used to authenticate Supabase Storage API calls done by Uppy.Tus plugin
-      //Reason: we're using raw http requests for the api calls not supabaseJS, hence we need to manually get the token
-      getBearerTokenForSupabase().then(async (token) => {
-        //Initialize Uppy
-        const uppy = await initUppy(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          token,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
-
-        setUppy(uppy)
-
-      });
-
-    }, [reset])
 
     //Once uppy is Initialized, download initial files from Supabse and add to the Uppy instance
     //But only do this ONCE
@@ -293,7 +280,7 @@ export const SupabaseUppyUploader = forwardRef<SupabaseUppyUploaderActions, Supa
         // setReady(true);
       });
 
-    }, [uppy, initialFilePathsState, bucketName, folder, ready, initialFileLoadStarted, onValueChangeCallback, onInitialFileLoadResultChangeCb, completeHandler]);
+    }, [uppy, initialFilePathsState, bucketName, folder, ready, setReady, initialFileLoadStarted, setInitialFileLoadCompleted, onValueChangeCallback, onInitialFileLoadResultChangeCb, completeHandler]);
 
     //Before a file is added to Uppy, setup Supabase metatadata (which is needed for upload to supabase via Tus plugin)
     //Optionally help manage duplicate file conflicts in Supabase Storage by doing one of the following (as specified by user):
@@ -499,7 +486,7 @@ export const SupabaseUppyUploader = forwardRef<SupabaseUppyUploaderActions, Supa
     useEffect(() => {
       setReset(Math.random());
       setReady(false);
-    }, [width, height, theme, showDoneButton, showProgressDetails, showRemoveButtonAfterComplete]);
+    }, [width, height, theme, showDoneButton, showProgressDetails, showRemoveButtonAfterComplete, setReady]);
 
     //Define element actions to run from Plasmic studio
     useImperativeHandle(
@@ -551,3 +538,54 @@ export const SupabaseUppyUploader = forwardRef<SupabaseUppyUploaderActions, Supa
     );
   }
 );
+
+
+export type SupabaseUppyHOCProps = {
+  children: ReactNode
+};
+
+const UppyContext = createContext<{
+  uppy: Uppy | undefined;
+  ready: boolean;
+  setReady: React.Dispatch<React.SetStateAction<boolean>>;
+  initialFileLoadCompleted: boolean;
+  setInitialFileLoadCompleted: React.Dispatch<React.SetStateAction<boolean>>;
+} | undefined>(undefined);
+
+
+//The component
+export function SupabaseUppyHOC({children}: SupabaseUppyHOCProps) {
+
+  const [uppy, setUppy] = useState<Uppy | undefined>(undefined);
+  const [ready, setReady] = useState(false);
+  const [initialFileLoadCompleted, setInitialFileLoadCompleted] = useState(false);
+
+  //SETUP UPPY ON INITIAL RENDER
+  useEffect(() => {
+    console.log("setting up uppy");
+    getBearerTokenForSupabase().then(async (token) => {
+      const uppyInstance = await initUppy(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        token,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      setUppy(uppyInstance);
+      //setReady(true);
+    });
+  }, []);
+
+  
+  const contextValue = {
+    uppy,
+    ready,
+    setReady,
+    initialFileLoadCompleted,
+    setInitialFileLoadCompleted,
+  };
+
+  return (
+    <UppyContext.Provider value={contextValue}>
+      {children}
+    </UppyContext.Provider>
+  );
+}

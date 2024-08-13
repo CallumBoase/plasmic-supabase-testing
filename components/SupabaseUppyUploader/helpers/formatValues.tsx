@@ -27,15 +27,17 @@ export default function formatValues(Files: Array<UppyFile> | null | undefined) 
     numFailed: safeFilesArray.filter((file) => file.progress?.uploadComplete === false).length,
     numAnyStatus: safeFilesArray.length,
     successfulFiles: safeFilesArray.filter((file) => file.progress?.uploadComplete).map((file) => {
-      return {
-        bucketName: file.meta.bucketName,
-        fileName: file.name,
-        path: file.meta.objectName,
-        pathWithoutFirstFolder: getObjNameWithoutFirstFolder(file.meta.objectName),
-        fullPath: `${file.meta.bucketName}/${file.meta.objectName}`,
-      }
+        return {
+          bucketName: file.meta.bucketName,
+          fileName: file.name,
+          path: file.meta.objectName,
+          pathWithoutFirstFolder: getObjNameWithoutFirstFolder(file.meta.objectName),
+          fullPath: `${file.meta.bucketName}/${file.meta.objectName}`,
+          publicURL: `${process.env.NEXT_PUBLIC_SUPABASE_URL!}/storage/v1/object/public/${file.meta.bucketName}/${file.meta.objectName}`,
+        }
     }),
   };
+
 
   return final;
 

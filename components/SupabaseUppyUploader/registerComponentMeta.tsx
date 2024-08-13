@@ -1,6 +1,6 @@
 //Plasmic
 import { CodeComponentMeta } from "@plasmicapp/host";
-import type { SupabaseUppyUploaderProps } from ".";
+import type { SupabaseUppyHOCProps, SupabaseUppyUploaderProps } from ".";
 
 
 //Define the registration metatdata for plasmic studio
@@ -190,6 +190,16 @@ export const SupabaseUppyUploaderMeta : CodeComponentMeta<SupabaseUppyUploaderPr
       description: "Reset the Uppy instance.",
       argTypes: [],
     }
+  },
+  importPath: "./index",
+};
+
+export const SupabaseUppyHOCMeta : CodeComponentMeta<SupabaseUppyHOCProps> = {
+  name: "SupabaseUppyHOC",
+  props: {
+    children: {
+      type: "slot",
+    },
   },
   importPath: "./index",
 };

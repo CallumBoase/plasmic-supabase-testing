@@ -7,8 +7,8 @@ import {
   SupabaseUserGlobalContextMeta,
   SupabaseUppyUploader,
   SupabaseUppyUploaderMeta,
-  SupabaseStorageGetSignedUrl,
-  SupabaseStorageGetSignedUrlMeta,
+  SupabaseUppyHOC,
+  SupabaseUppyHOCMeta
 } from "."
 
 export const PLASMIC = initPlasmicLoader({
@@ -41,4 +41,4 @@ PLASMIC.registerGlobalContext(SupabaseUserGlobalContext, SupabaseUserGlobalConte
 //Register components
 PLASMIC.registerComponent(SupabaseProvider, SupabaseProviderMeta);
 PLASMIC.registerComponent(SupabaseUppyUploader, SupabaseUppyUploaderMeta);
-PLASMIC.registerComponent(SupabaseStorageGetSignedUrl, SupabaseStorageGetSignedUrlMeta);
+PLASMIC.registerComponent(SupabaseUppyHOC, SupabaseUppyHOCMeta);

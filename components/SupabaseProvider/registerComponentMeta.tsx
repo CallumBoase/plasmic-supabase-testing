@@ -268,6 +268,7 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
       argTypes: [
         { name: "ID", type: "string", displayName: "Id / unique identifier of the row to delete" },
         { name: "shouldReturnRow", type: "boolean", displayName: "Return added row/s? (Returns [] if false)"},
+        { name: "returnImmediately", type: "boolean"}
       ],
     },
     addRow: {
@@ -275,7 +276,7 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
       argTypes: [
         { name: "rowForSupabase", type: "object", displayName: "Row object to send to Supabase"},
         { name: "shouldReturnRow", type: "boolean", displayName: "Return mutated row/s? (Returns [] if false)"},
-        { name: "awaitResponse", type: "boolean"}
+        { name: "returnImmediately", type: "boolean"}
       ],
     },
     editRow: {
@@ -283,6 +284,7 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
       argTypes: [
         { name: "rowForSupabase", type: "object", displayName: "Row object to send to Supabase"},
         { name: "shouldReturnRow", type: "boolean", displayName: "Return edited row/s? (Returns [] if false)"},
+        { name: "returnImmediately", type: "boolean"}
       ],
     },
     flexibleMutation: {
@@ -297,6 +299,7 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
           displayName: "Filters for update/delete (array of objects eg {fieldName: 'id', operator: 'eq', value: 1, value2: null})" 
         },
         { name: "shouldReturnRow", type: "boolean", displayName: "Return mutated row/s? (Returns [] if false)"},
+        { name: "returnImmediately", type: "boolean"}
       ],
     },
     runRpc: {
@@ -304,6 +307,7 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
       argTypes: [
         { name: "rpcName", displayName: 'Name of the RPC', type: "string" },
         { name: "args", displayName: 'Arguments object for database function', type: "object"},
+        { name: "returnImmediately", type: "boolean"}
       ]
     },
     clearError: {

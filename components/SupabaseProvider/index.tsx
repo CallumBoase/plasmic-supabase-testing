@@ -1,4 +1,3 @@
-//@ts-nocheck
 import React, { useState, useEffect, forwardRef, useCallback, useImperativeHandle } from "react";
 import { useMutablePlasmicQueryData } from "@plasmicapp/query";
 import { DataProvider } from "@plasmicapp/host";
@@ -30,15 +29,15 @@ type SupabaseProviderError = {
 }
 
 type MutationResponse = {
-    data: Row | Rows | null
+    data: Row | Row[] | [] | null
     error: SupabaseProviderError | null
 }
 
 interface Actions {
     //TODO: with optionality turned off (ie. no .select() after the .insert or .update), would add and edit return null or the standard api response code like 200 etc? A: Rows can be null and also it could be an empty Array of Rows. 
-    addRow(rowForSupabase: any, shouldReturnRow: boolean, returnImmediately: boolean): Promise<MutationResponse>;
-    editRow(rowForSupabase: any, shouldReturnRow: boolean): Promise<MutationResponse>;
-    deleteRow(id: any, shouldReturnRow: boolean): Promise<MutationResponse>;
+    addRow(rowForSupabase: any, shouldReturnRow: boolean, returnImmediately: boolean): Promise<any>;
+    editRow(rowForSupabase: any, shouldReturnRow: boolean, returnImmediately: boolean): Promise<any>;
+    deleteRow(id: any, shouldReturnRow: boolean, returnImmediately: boolean): Promise<any>;
     refetchRows(): Promise<void>;
     flexibleMutation(
         tableName: string,
@@ -46,10 +45,12 @@ interface Actions {
         dataForSupabase: any,
         filters: Filter[] | undefined,
         shouldReturnRow: boolean,
-      ): Promise<MutationResponse>;
+        returnImmediately: boolean
+      ): Promise<any>;
       runRpc(
         rpcName: string,
         args: any,
+        returnImmediately: boolean
       ): Promise<any>;
 }
 
@@ -68,6 +69,23 @@ export interface SupabaseProviderProps {
     queryName: string;
     className?: string;
 }
+
+// Helper function
+const executeWithOptionalAwait = async (mutateFunction: () => Promise<any>, returnImmediately: boolean, errorHandler: (error: any) => any) => {
+    if (returnImmediately) {
+      mutateFunction();
+      console.log("Immediate return")
+      return null;
+    } else {
+      try {
+        const result = await mutateFunction();
+        console.log("Awaited return")
+        return result;
+      } catch (err) {
+        return errorHandler(err);
+      }
+    }
+  };
 
 //The component
 export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
@@ -164,12 +182,12 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         //When fetchData function is rebuilt, re-fetch the data
         useEffect(() => {
             mutate();
-        }, [tableName, columns, memoizedFilters, limit, offset, returnCount]);
+        }, [mutate,tableName, columns, memoizedFilters, limit, offset, returnCount]);
 
 
         //Function to actually add row to Supabase via an API call
         const addRow = useCallback(
-            async (rowForSupabase: Row, shouldReturnRow: boolean) : Promise<Rows> => {
+            async (rowForSupabase: Row, shouldReturnRow: boolean) : Promise<any> => { //typed to any because we had to have ts ignore types on the dynamic query build below so it doesn't understand the response types
       
               if(simulateRandomMutationErrors && Math.random() > 0.5) {
                 //1 second delay
@@ -184,6 +202,8 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 .from(tableName)
                 .insert(rowForSupabase)
               
+              //typescript ignore next line because you don't like the dynamic query build, however we know it's safe to run a select on an insert
+              //@ts-ignore
               if (shouldReturnRow) { query = query.select() }
             
               const { data, error } = await query;
@@ -199,7 +219,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
 
         //Function to actually edit row in Supabase via an API call
         const editRow = useCallback(
-            async (rowForSupabase: Row, shouldReturnRow: boolean) : Promise<Rows> => {
+            async (rowForSupabase: Row, shouldReturnRow: boolean) : Promise<any> => { //typed to any because we had to have ts ignore types on the dynamic query build below so it doesn't understand the response types
       
               if(simulateRandomMutationErrors && Math.random() > 0.5) {
                 //1 second delay
@@ -215,6 +235,8 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 .update(rowForSupabase)
                 .eq(uniqueIdentifierField, rowForSupabase[uniqueIdentifierField])
               
+                //typescript ignore next line because you don't like the dynamic query build, however we know it's safe to run a select on an update
+              //@ts-ignore
               if (shouldReturnRow) { query = query.select() }
             
               const { data, error } = await query;
@@ -230,7 +252,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
 
         //Function to actually delete row in Supabase via an API call
         const deleteRow = useCallback(
-            async (uniqueIdentifierValue: number | string, shouldReturnRow: boolean) : Promise<Rows> => {
+            async (uniqueIdentifierValue: number | string, shouldReturnRow: boolean) : Promise<any> => { //typed to any because we had to have ts ignore types on the dynamic query build below so it doesn't understand the response types
       
               if(simulateRandomMutationErrors && Math.random() > 0.5) {
                 //1 second delay
@@ -246,6 +268,8 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 .delete()
                 .eq(uniqueIdentifierField, uniqueIdentifierValue)
               
+                //typescript ignore next line because you don't like the dynamic query build, however we know it's safe to run a select on a delete
+              //@ts-ignore
               if (shouldReturnRow) { query = query.select() }
             
               const { data, error } = await query;
@@ -265,8 +289,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
               operation: "insert" | "update" | "delete" | "upsert",
               dataForSupabase: Row,
               filters: Filter[] | undefined,
-              shouldReturnRow: boolean
-            ) : Promise<Rows> => {
+              shouldReturnRow: boolean,
+              orderBy: null
+            ) : Promise<MutationResponse> => {
 
             if(simulateRandomMutationErrors && Math.random() > 0.5) {
                 //1 second delay
@@ -299,7 +324,8 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 operation,
                 columns: null,
                 dataForSupabase,
-                filters
+                filters,
+                orderBy
               });
       
               //Run the flexible mutation
@@ -349,223 +375,237 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
 
         //Define element actions to run from Plasmic Studio
         useImperativeHandle(ref, () => ({
-            //Element action to add a record & auto-refetch when done
-            addRow: async (rowForSupabase, shouldReturnRow, returnImmediately) => { // default values for backward compatibility
-                setIsMutating(true);
-                console.log(rowForSupabase)
-                console.log(shouldReturnRow)
-                console.log(returnImmediately)     
-                
-                if (returnImmediately) {
-                    mutate(
-                    //Initiate the mutation promise but don't wait for it to return before returning
-                        addRow(rowForSupabase, shouldReturnRow)
-                            .then((result) => {return { data: result, error: null }})
-                            .catch((err) => {
-                                console.error({ERROR: err}); 
-                                const supabaseProviderError = {
-                                    errorId: uuid(),
-                                    summary: 'Error adding row',
-                                    errorObject: err,
-                                    actionAttempted: 'insert',
-                                    rowForSupabase: rowForSupabase || null,
-                                    recordId: null
-                                };
-                                if (onError && typeof onError === 'function') {
-                                    onError(supabaseProviderError);
-                                }
-                            }
-                        ), {
-                            populateCache: false,
-                            revalidate: true,
-                            rollbackOnError: true
-                        }
-                    )
-                    console.log("Immediate return")
-                    return null;
-                } else { 
-                    try {
-                        //Run the mutation but await the response and return it
-                        const result = await mutate(addRow(rowForSupabase, shouldReturnRow), {
-                        populateCache: false,
-                        revalidate: true,
-                        rollbackOnError: true
-                        });
-                        return { data: result, error: null };
+          //Element action to add a record & auto-refetch when done
+          addRow: async (
+            rowForSupabase,
+            shouldReturnRow,
+            returnImmediately
+          ) => {
+            // default values for backward compatibility
+            setIsMutating(true);
 
-                    } catch(err) {
-                        console.error(err)
-                        const supabaseProviderError = {
+            const errorHandler = (error: any) => {
+              const supabaseProviderError = {
+                errorId: uuid(),
+                summary: "Error adding row",
+                errorObject: error,
+                actionAttempted: "insert",
+                rowForSupabase: rowForSupabase || null,
+                recordId: null,
+              };
+              if (onError && typeof onError === "function") {
+                onError(supabaseProviderError);
+              }
+              return { data: null, error: supabaseProviderError };
+            };
+
+            const mutateFunction = () =>
+              mutate(
+                //@ts-ignore
+                addRow(rowForSupabase, shouldReturnRow)
+                  .then((result) => ({ data: result, error: null }))
+                  .catch((error) => errorHandler(error)),
+                {
+                  populateCache: false,
+                  revalidate: true,
+                  rollbackOnError: true,
+                }
+              );
+
+            const result = await executeWithOptionalAwait(
+              mutateFunction,
+              returnImmediately,
+              errorHandler
+            );
+
+            return result;
+          },
+
+          //Element action to edit a record and auto-refetch when done
+          editRow: async (
+            rowForSupabase,
+            shouldReturnRow,
+            returnImmediately
+          ) => {
+            // default values for backward compatibility
+            setIsMutating(true);
+
+            const errorHandler = (error: any) => {
+              const supabaseProviderError = {
+                errorId: uuid(),
+                summary: "Error editing row",
+                errorObject: error,
+                actionAttempted: "update",
+                rowForSupabase: rowForSupabase || null,
+                recordId: rowForSupabase[uniqueIdentifierField],
+              };
+              if (onError && typeof onError === "function") {
+                onError(supabaseProviderError);
+              }
+              return { data: null, error: supabaseProviderError };
+            };
+
+            const mutateFunction = () =>
+              mutate(
+                //@ts-ignore
+                editRow(rowForSupabase, shouldReturnRow)
+                  .then((result) => ({ data: result, error: null }))
+                  .catch((error) => errorHandler(error)),
+                {
+                  populateCache: false,
+                  revalidate: true,
+                  rollbackOnError: true,
+                }
+              );
+
+            const result = await executeWithOptionalAwait(
+              mutateFunction,
+              returnImmediately,
+              errorHandler
+            );
+
+            return result;
+          },
+
+          //Element action to delete a record and auto-refetch when done
+          deleteRow: async (
+            uniqueIdentifierValue,
+            shouldReturnRow,
+            returnImmediately
+          ) => {
+            // default values for backward compatibility
+            setIsMutating(true);
+
+            const errorHandler = (error: any) => {
+              const supabaseProviderError = {
+                errorId: uuid(),
+                summary: "Error deleting row",
+                errorObject: error,
+                actionAttempted: "delete",
+                rowForSupabase: null,
+                recordId: uniqueIdentifierValue,
+              };
+              if (onError && typeof onError === "function") {
+                onError(supabaseProviderError);
+              }
+              return { data: null, error: supabaseProviderError };
+            };
+
+            const mutateFunction = () =>
+              mutate(
+                //@ts-ignore
+                deleteRow(uniqueIdentifierValue, shouldReturnRow)
+                  .then((result) => ({ data: result, error: null }))
+                  .catch((error) => errorHandler(error)),
+                {
+                  populateCache: false,
+                  revalidate: true,
+                  rollbackOnError: true,
+                }
+              );
+
+            const result = await executeWithOptionalAwait(
+              mutateFunction,
+              returnImmediately,
+              errorHandler
+            );
+
+            return result;
+          },
+
+          //Element action to simply refetch the data with the fetcher
+          refetchRows: async () => {
+            mutate()
+          },
+
+          //Element action to run a more flexible mutation with less checks auto-refetch when done
+          flexibleMutation: async (
+            tableName,
+            operation,
+            dataForSupabase,
+            filters,
+            shouldReturnRow,
+            returnImmediately
+          ) => {
+            // default values for backward compatibility
+            setIsMutating(true);
+
+            const errorHandler = (error: any) => {
+              const supabaseProviderError = {
+                errorId: uuid(),
+                summary: "Error with flexible mutation",
+                errorObject: error,
+                actionAttempted: operation,
+                rowForSupabase: dataForSupabase || null,
+                recordId: null, //filters?.forEach((filter) => {filter.fieldName, filter.value, filter.value2})
+              };
+              if (onError && typeof onError === "function") {
+                onError(supabaseProviderError);
+              }
+              return { data: null, error: supabaseProviderError };
+            };
+
+            const mutateFunction = () =>
+              mutate(
+                //@ts-ignore
+                flexibleMutation(
+                  tableName,
+                  operation,
+                  dataForSupabase,
+                  filters,
+                  shouldReturnRow,
+                )
+                  .then((result) => ({ data: result, error: null }))
+                  .catch((error) => errorHandler(error)),
+                {
+                  populateCache: false,
+                  revalidate: true,
+                  rollbackOnError: true,
+                }
+              );
+
+            const result = await executeWithOptionalAwait(mutateFunction, returnImmediately,errorHandler);
+
+            return result;
+          },
+
+          runRpc: async (rpcName, args, returnImmediately) => {
+            setIsMutating(true);
+
+                const errorHandler = (error: any) => {
+                    const supabaseProviderError = {
                         errorId: uuid(),
-                        summary: 'Error adding row',
-                        errorObject: err,
-                        actionAttempted: 'insert',
-                        rowForSupabase: rowForSupabase || null,
-                        recordId: null
-                        };
-                        if (onError && typeof onError === 'function') {
-                            onError(supabaseProviderError);
-                        }
-                        console.log("Return after response")
-                        return { data: null, error: supabaseProviderError };
+                        summary: "Error with RPC",
+                        errorObject: error,
+                        actionAttempted: "rpc",
+                        rowForSupabase: args || null,
+                        recordId: null,
+                    };
+                    if (onError && typeof onError === "function") {
+                        onError(supabaseProviderError);
                     }
-                    
+                    return { data: null, error: supabaseProviderError };
                 }
-            },
-
-            //Element action to edit a record and auto-refetch when done
-            editRow: async (rowForSupabase, shouldReturnRow = false) => { // default values for backward compatibility
-                setIsMutating(true);
-        
-                //Run the mutation
-                try {
-                    const result = await mutate(editRow(rowForSupabase, shouldReturnRow), {
+  
+              const mutateFunction = () =>
+                mutate(
+                //@ts-ignore
+                    rpc(rpcName, args)
+                    .then((result) => ({ data: result, error: null }))
+                    .catch((error) => errorHandler(error)),
+                  {
                     populateCache: false,
                     revalidate: true,
-                    rollbackOnError: true
-                    });
-                    return { data: result, error: null };
-        
-                } catch(err) {
-                    console.error(err)
-                    const supabaseProviderError = {
-                    errorId: uuid(),
-                    summary: 'Error editing row',
-                    errorObject: err,
-                    actionAttempted: 'update',
-                    rowForSupabase: rowForSupabase || null,
-                    recordId: rowForSupabase[uniqueIdentifierField]
-                    };
-                    if (onError && typeof onError === 'function') {
-                        onError(supabaseProviderError);
-                    }
-                    return { data: null, error: supabaseProviderError };
-                }
-            },
-        
+                    rollbackOnError: true,
+                  }
+                );
+  
+              const result = await executeWithOptionalAwait(mutateFunction, returnImmediately,errorHandler);
+  
+              return result;
+          },
 
-            //Element action to delete a record and auto-refetch when done
-            deleteRow: async (uniqueIdentifierValue, shouldReturnRow = false) => { // default values for backward compatibility
-                setIsMutating(true);
-        
-                //Run the mutation
-                try {
-                    const result = await mutate(deleteRow(uniqueIdentifierValue, shouldReturnRow), {
-                    populateCache: false,
-                    revalidate: true,
-                    rollbackOnError: true
-                    });
-                    return { data: result, error: null };
-        
-                } catch(err) {
-                    console.error(err)
-                    const supabaseProviderError = {
-                    errorId: uuid(),
-                    summary: 'Error deleting row',
-                    errorObject: err,
-                    actionAttempted: 'delete',
-                    rowForSupabase: null,
-                    recordId: uniqueIdentifierValue
-                    };
-                    if (onError && typeof onError === 'function') {
-                        onError(supabaseProviderError);
-                    }
-                    return { data: null, error: supabaseProviderError };
-                }
-            },
-
-            //Element action to simply refetch the data with the fetcher
-            refetchRows: async () => {
-                try {
-                    mutate()
-                } catch(err) {
-                    console.error(err)
-                    const supabaseProviderError = {
-                    errorId: uuid(),
-                    summary: 'Error refetching rows',
-                    errorObject: err,
-                    actionAttempted: 'read',
-                    rowForSupabase: null,
-                    recordId: null
-                    };
-                    if (onError && typeof onError === 'function') {
-                        onError(supabaseProviderError);
-                    }
-                    return { data: null, error: supabaseProviderError };
-                }
-            },
-
-            //Element action to run a more flexible mutation with less checks auto-refetch when done
-            flexibleMutation: async (
-                tableName,
-                operation,
-                dataForSupabase,
-                filters,
-                shouldReturnRow = false
-            ) => { // default values for backward compatibility
-                setIsMutating(true);
-        
-                //Run the mutation
-                try {
-                    const result = await mutate(flexibleMutation(tableName, operation, dataForSupabase, filters, shouldReturnRow), {
-                    populateCache: false,
-                    revalidate: true,
-                    rollbackOnError: true
-                    });
-                    return { data: result, error: null };
-        
-                } catch(err) {
-                    console.error(err)
-                    const supabaseProviderError = {
-                    errorId: uuid(),
-                    summary: 'Error with flexible mutation',
-                    errorObject: err,
-                    actionAttempted: operation,
-                    rowForSupabase: dataForSupabase || null,
-                    recordId: null //filters?.forEach((filter) => {filter.fieldName, filter.value, filter.value2})
-                    };
-                    if (onError && typeof onError === 'function') {
-                        onError(supabaseProviderError);
-                    }
-                    return { data: null, error: supabaseProviderError };
-                }
-            },
-
-            runRpc: async (
-                rpcName, 
-                args,
-            ) => {
-                setIsMutating(true);
-
-                //Run the mutation
-                try {
-                    const result = await mutate(rpc(rpcName, args), {
-                    populateCache: false,
-                    revalidate: true,
-                    rollbackOnError: true
-                    });
-                    return { data: result, error: null };
-        
-                } catch(err) {
-                    console.error(err)
-                    const supabaseProviderError = {
-                    errorId: uuid(),
-                    summary: 'Error with RPC',
-                    errorObject: err,
-                    actionAttempted: "rpc",
-                    rowForSupabase: args || null,
-                    recordId: null
-                    };
-                    if (onError && typeof onError === 'function') {
-                        onError(supabaseProviderError);
-                    }
-                    return { data: null, error: supabaseProviderError };
-                }
-            },
-
-
-        }
-    ));
+        }));
     
 
         return (
