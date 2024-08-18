@@ -144,57 +144,26 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
       description:
         "Columns to order the results by during the query.",
     },
-    limit: {
-      type: "number",
-      step: 1,
-      min: 0,
-      required: false,
-      description: 'Number of records to fetch'
-    },
-    offset: {
-      type: "number",
-      step: 1,
-      min: 0,
-      required: false,
-      description: 'Number of records to skip'
-    },
-    returnCount: {
-      type: "choice",
-      options: ["none", "exact", "planned", "estimated"],
-      defaultValue: "none",
-      required: false,
-      description: 'Count algorithm to use to count rows in the table or view. `"none"`: Don\'t return a count. `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the hood. `"planned"`: Approximated but fast count algorithm. Uses the Postgres statistics under the hood. `"estimated"`: Uses exact count for low numbers and planned count for high numbers.'
-    },
-    onError: {
-      type: "eventHandler",
-      argTypes: [{name: 'supabaseProviderError', type: 'object'}],
-      required: false,
-    },
-    initialSortField: "string",
+    /*initialSortField: "string",
     initialSortDirection: {
       type: "choice",
       options: ["asc", "desc"],
-    },
+    },*/
     uniqueIdentifierField: {
       type: "string",
       required: true,
       defaultValue: "id",
     },
-    disableFetchData: {
-      type: 'boolean',
-      advanced: true,
-      description: 'Disable data fetching. Useful for when you want to just use element actions without fetching data first, eg to use the SupabaseProvider to add a row on a page where you are not displaying other rows.'
-    },
-    hideDefaultErrors: {
+    /*hideDefaultErrors: {
       type: 'boolean',
       advanced: true,
       description: 'Hide default errors so you can use the $ctx values yourself to show custom error messages'
-    },
-    forceLoading: {
+    },*/
+    forceMutationError: {
       type: "boolean",
       advanced: true,
     },
-    forceValidating: {
+    /*forceValidating: {
       type: "boolean",
       advanced: true,
     },
@@ -209,19 +178,54 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
     forceMutationError: {
       type: "boolean",
       advanced: true,
+    },*/
+    limit: {
+      type: "number",
+      step: 1,
+      min: 0,
+      required: false,
+      description: 'Number of records to fetch',
+      advanced: true,
+    },
+    offset: {
+      type: "number",
+      step: 1,
+      min: 0,
+      required: false,
+      description: 'Number of records to skip',
+      advanced: true,
+    },
+    returnCount: {
+      type: "choice",
+      options: ["none", "exact", "planned", "estimated"],
+      defaultValue: "none",
+      required: false,
+      description: 'Count algorithm to use to count rows in the table or view. `"none"`: Don\'t return a count. `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the hood. `"planned"`: Approximated but fast count algorithm. Uses the Postgres statistics under the hood. `"estimated"`: Uses exact count for low numbers and planned count for high numbers.',
+      advanced: true,
+    },
+    onError: {
+      type: "eventHandler",
+      argTypes: [{name: 'supabaseProviderError', type: 'object'}],
+      required: false,
+    },
+    disableFetchData: {
+      type: 'boolean',
+      displayName: "Disable data fetching",
+      advanced: true,
+      description: 'Disable data fetching. Useful for when you want to just use element actions without fetching data first, eg to use the SupabaseProvider to add a row on a page where you are not displaying other rows.'
     },
     simulateRandomMutationErrors: {
       type: "boolean",
       advanced: true,
     },
-    loading: {
+    /*loading: {
       type: "slot",
       defaultValue: {
         type: "text",
         value: "Loading...",
       },
-    },
-    validating: {
+    },*/
+    /*validating: {
       type: "slot",
       defaultValue: {
         type: "text",
@@ -234,7 +238,7 @@ export const SupabaseProviderMeta : CodeComponentMeta<SupabaseProviderProps> = {
         type: "text",
         value: "No data",
       },
-    },
+    },*/
     children: {
       type: "slot",
       defaultValue: [

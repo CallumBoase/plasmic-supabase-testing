@@ -65,7 +65,9 @@ export interface SupabaseProviderProps {
     uniqueIdentifierField: string;
     returnCount?: "none" | "exact" | "planned" | "estimated";
     onError?: ( supabaseProviderError: SupabaseProviderError ) => void;
+    disableFetchData: boolean;
     simulateRandomMutationErrors: boolean;
+    forceMutationError: boolean;
     queryName: string;
     className?: string;
 }
@@ -101,7 +103,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
             uniqueIdentifierField,
             returnCount,
             onError,
+            disableFetchData,
             simulateRandomMutationErrors,
+            forceMutationError,
             queryName,
             className,
         } = props;
@@ -111,10 +115,13 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         const memoizedFilters = useDeepCompareMemo(() => filters, [filters]);
 
         //Function to fetch records from Supabase
-        const fetchData = async () => {
+        const fetchData = useCallback(async () => {
 
             setIsMutating(false);
             setFetchError(null);
+
+            //Just return an empty array if the user has disabled data fetch (so they can just run element actions)
+            if(disableFetchData) return [];
             
             try {
                 //Create new supabase client
@@ -161,7 +168,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 }
                 throw(err);
             }
-        }
+        }, [tableName, columns, memoizedFilters, orderBy, disableFetchData, limit, offset, onError, returnCount])
 
         //Use the useMutablePlasmicQueryData hook to fetch the data
         //Works very similar to useSWR
@@ -182,7 +189,13 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         //When fetchData function is rebuilt, re-fetch the data
         useEffect(() => {
             mutate();
-        }, [mutate,tableName, columns, memoizedFilters, limit, offset, returnCount]);
+        }, [mutate, tableName, columns, memoizedFilters, orderBy, disableFetchData, limit, offset, returnCount]);
+
+        /*useEffect(() => {
+          if (forceMutationError) {
+            throw new Error('Simulated mutation error');
+          }
+        }, [forceMutationError])*/
 
 
         //Function to actually add row to Supabase via an API call
