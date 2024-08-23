@@ -281,6 +281,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 .delete()
                 .eq(uniqueIdentifierField, uniqueIdentifierValue)
               
+              //Todo: no need for option to return row for delete - it's not possible
                 //typescript ignore next line because you don't like the dynamic query build, however we know it's safe to run a select on a delete
               //@ts-ignore
               if (shouldReturnRow) { query = query.select() }
