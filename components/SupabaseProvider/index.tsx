@@ -115,7 +115,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         const memoizedFilters = useDeepCompareMemo(() => filters, [filters]);
 
         //Function to fetch records from Supabase
-        const fetchData = useCallback(async () => {
+        const fetchData = async () => {
 
             setIsMutating(false);
             setFetchError(null);
@@ -168,7 +168,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 }
                 throw(err);
             }
-        }, [tableName, columns, memoizedFilters, orderBy, disableFetchData, limit, offset, onError, returnCount])
+        }
 
         //Use the useMutablePlasmicQueryData hook to fetch the data
         //Works very similar to useSWR
@@ -222,10 +222,22 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
               const { data, error } = await query;
 
               if (error) {
-                throw error;
+                const supabaseProviderError = {
+                  errorId: uuid(),
+                  summary: 'Error adding row',
+                  errorObject: error,
+                  actionAttempted: 'insert',
+                  rowForSupabase: rowForSupabase,
+                  recordId: null,
+                };
+                return { data: null, error: supabaseProviderError };
               }                                     
               
-              return shouldReturnRow ?  data : [] //if not specified to return the added row, return an empty array to indicate success
+              return { 
+                //if not specified to return the added row, return an empty array to indicate success
+                data: shouldReturnRow ?  data : [], 
+                error: null 
+              } 
             },
             [tableName, simulateRandomMutationErrors]
         );
@@ -398,8 +410,8 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
             // default values for backward compatibility
             setIsMutating(true);
 
-            const errorHandler = (error: any) => {
-              const supabaseProviderError = {
+            const buildSupabaseProviderError = (error: any) => {
+              return {
                 errorId: uuid(),
                 summary: "Error adding row",
                 errorObject: error,
@@ -407,29 +419,31 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 rowForSupabase: rowForSupabase || null,
                 recordId: null,
               };
-              if (onError && typeof onError === "function") {
-                onError(supabaseProviderError);
-              }
-              return { data: null, error: supabaseProviderError };
             };
 
+            async function addRowWrapper() {
+              return addRow(rowForSupabase, shouldReturnRow)
+                .then(data => ({ data, error: null }))
+                .catch(error => {
+                  const supabaseProviderError = buildSupabaseProviderError(error);
+                  if (onError && typeof onError === "function") {
+                    onError(supabaseProviderError);
+                  }
+                  return { data: null, error: supabaseProviderError };
+                });
+            }
+
             const mutateFunction = () =>
-              mutate(
-                //@ts-ignore
-                addRow(rowForSupabase, shouldReturnRow)
-                  .then((result) => ({ data: result, error: null }))
-                  .catch((error) => errorHandler(error)),
-                {
-                  populateCache: false,
-                  revalidate: true,
-                  rollbackOnError: true,
-                }
-              );
+              mutate(addRowWrapper, {
+                populateCache: false,
+                revalidate: true,
+                rollbackOnError: true,
+              });
 
             const result = await executeWithOptionalAwait(
               mutateFunction,
               returnImmediately,
-              errorHandler
+              buildSupabaseProviderError
             );
 
             return result;
