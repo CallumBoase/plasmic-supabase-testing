@@ -207,6 +207,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 throw new Error('Simulated error adding record');
               }
+
+              //Simulate a 2 second delay
+              await new Promise(resolve => setTimeout(resolve, 2000));
       
               //Add the record to Supabase
               const supabase = createClient();
@@ -251,6 +254,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 throw new Error('Simulated error editing record');
               }
+
+              //Simulate a 2 second delay
+              await new Promise(resolve => setTimeout(resolve, 2000));
       
               //Update the record in Supabase
               const supabase = createClient();
@@ -284,6 +290,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 throw new Error('Simulated error deleting record');
               }
+
+              //Simulate a 2 second delay
+              await new Promise(resolve => setTimeout(resolve, 2000));
       
               //Update the record in Supabase
               const supabase = createClient();
@@ -324,6 +333,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 throw new Error('Simulated error deleting record');
             }
+
+            //Simulate a 2 second delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
       
               //New supabase client
               const supabase = createClient();
@@ -380,6 +392,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     throw new Error('Simulated error deleting record');
                 }
+
+                //Simulate a 2 second delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
         
                 //Run the RPC
                 const supabase = createClient();
