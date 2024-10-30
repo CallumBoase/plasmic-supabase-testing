@@ -3,6 +3,8 @@ import { initPlasmicLoader } from "@plasmicapp/loader-nextjs";
 import { 
   SupabaseProvider, 
   SupabaseProviderMeta,
+  SupabaseProviderNew,
+  SupabaseProviderNewMeta,
   SupabaseUserGlobalContext,
   SupabaseUserGlobalContextMeta,
   SupabaseUppyUploader,
@@ -41,4 +43,5 @@ export const PLASMIC = initPlasmicLoader({
 //Register components
 PLASMIC.registerComponent(SupabaseProvider, SupabaseProviderMeta);
 PLASMIC.registerComponent(SupabaseUppyUploader, SupabaseUppyUploaderMeta);
+PLASMIC.registerComponent(SupabaseProviderNew, SupabaseProviderNewMeta);
 // PLASMIC.registerComponent(SupabaseUppyHOC, SupabaseUppyHOCMeta);
