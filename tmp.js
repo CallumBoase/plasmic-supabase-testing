@@ -64,3 +64,4 @@ console.log(typeof something().then(() => {}));
 console.log(isAsyncFunction(something().then(() => {})));
 console.log(something().then(() => {}) instanceof Promise);
 
+
