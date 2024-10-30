@@ -96,7 +96,7 @@ const executeWithOptionalAwait = async (
   errorHandler: (error: any) => any
 ) => {
   if (returnImmediately) {
-    mutateFunction();
+    mutateFunction().catch(err => errorHandler(err));
     console.log("Immediate return");
     return null;
   } else {
