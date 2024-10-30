@@ -109,7 +109,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
           throw error;
         }
 
-        return { data, error, count };
+        return { data, count };
 
       } catch (err) {
         console.error(err);
