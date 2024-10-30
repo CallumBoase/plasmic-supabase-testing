@@ -36,9 +36,9 @@ export const PLASMIC = initPlasmicLoader({
 // PLASMIC.registerComponent(...);
 
 //Register global context
-PLASMIC.registerGlobalContext(SupabaseUserGlobalContext, SupabaseUserGlobalContextMeta)
+// PLASMIC.registerGlobalContext(SupabaseUserGlobalContext, SupabaseUserGlobalContextMeta)
 
 //Register components
 PLASMIC.registerComponent(SupabaseProvider, SupabaseProviderMeta);
 PLASMIC.registerComponent(SupabaseUppyUploader, SupabaseUppyUploaderMeta);
-PLASMIC.registerComponent(SupabaseUppyHOC, SupabaseUppyHOCMeta);
+// PLASMIC.registerComponent(SupabaseUppyHOC, SupabaseUppyHOCMeta);
