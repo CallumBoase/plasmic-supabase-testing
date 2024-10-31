@@ -31,8 +31,6 @@ export default function createClient() {
   //This happens server-side so cookies and local storage are not available
   if (serverSide()) {
 
-    console.log('in getStaticProps')
-
     // Render the static-props version of the SupabaseProvider
     // The query will run successfully on the server if it is accessible to the public
     // But will fail if the query requires the user to be logged in
@@ -44,8 +42,6 @@ export default function createClient() {
     )
 
   } else {
-
-    console.log('in browser')
 
     // Render the browser version of the SupabaseProvider
     // With modification to read session from localStorage if operating in Plasmic Studio
