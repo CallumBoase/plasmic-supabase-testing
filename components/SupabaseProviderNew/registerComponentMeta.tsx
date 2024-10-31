@@ -207,6 +207,14 @@ export const SupabaseProviderNewMeta : CodeComponentMeta<SupabaseProviderNewProp
         This behaviour is normally desirable because of the SEO benefits.
         However, if you wish to disable server-side prefetch, you can set this prop to TRUE.`,
       advanced: true
-    }
+    },
+    addDelayForTesting: {
+      type: "boolean",
+      required: false,
+      defaultValue: false,
+      description: `
+        Turn this ON to add a 1 second delay when fetching or mutating data from Supabase. Useful for testing purposes.`,
+      advanced: true
+    },
   }
 };

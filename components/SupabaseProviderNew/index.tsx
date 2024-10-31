@@ -43,6 +43,7 @@ export interface SupabaseProviderNewProps {
   returnCount?: "none" | "exact" | "planned" | "estimated";
   onError: (supabaseProviderError: SupabaseProviderError) => void;
   skipServerSidePrefetch: boolean;
+  addDelayForTesting: boolean;
 }
 
 type SupabaseProviderError = {
@@ -78,6 +79,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
       returnCount,
       onError,
       skipServerSidePrefetch,
+      addDelayForTesting,
     } = props;
 
     // console.log(props)
@@ -113,11 +115,11 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
           orderBy,
           limit,
           offset,
-          returnCount,
+          returnCount
         });
 
-        //Simulate 1 second delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Add a 1 second delay for testing when indicated
+        if (addDelayForTesting) await new Promise((resolve) => setTimeout(resolve, 1000));
 
         const { data, error, count } = await supabaseQuery;
 
