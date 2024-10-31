@@ -163,9 +163,18 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
       isLoading,
     } = useMutablePlasmicQueryData(
       [
+        // Make the cache value unique based on all these parameters
+        // Ensures that different data from same SupabaseProvider (eg on a dynamic page) is not mixed up in the cache
+        // Also ensures that data is refetched when props change (when in Plasmic studio or if app allows dynamic prop values)
         queryName, 
+        tableName,
+        columns,
         JSON.stringify(memoizedFilters), 
         JSON.stringify(memoizedOrderBy),
+        orderBy,
+        limit,
+        offset,
+        returnCount
       ], 
       fetchData,
       {
