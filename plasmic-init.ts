@@ -5,8 +5,8 @@ import {
   SupabaseProviderMeta,
   SupabaseProviderNew,
   SupabaseProviderNewMeta,
-  // SupabaseUserGlobalContext,
-  // SupabaseUserGlobalContextMeta,
+  SupabaseUserGlobalContext,
+  SupabaseUserGlobalContextMeta,
   // SupabaseUppyUploader,
   // SupabaseUppyUploaderMeta,
   // SupabaseUppyHOC,
@@ -38,7 +38,7 @@ export const PLASMIC = initPlasmicLoader({
 // PLASMIC.registerComponent(...);
 
 //Register global context
-// PLASMIC.registerGlobalContext(SupabaseUserGlobalContext, SupabaseUserGlobalContextMeta)
+PLASMIC.registerGlobalContext(SupabaseUserGlobalContext, SupabaseUserGlobalContextMeta)
 
 //Register components
 PLASMIC.registerComponent(SupabaseProvider, SupabaseProviderMeta);
