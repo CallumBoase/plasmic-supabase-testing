@@ -192,5 +192,21 @@ export const SupabaseProviderNewMeta : CodeComponentMeta<SupabaseProviderNewProp
       description: 'Count algorithm to use to count rows in the table or view. `"none"`: Don\'t return a count. `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the hood. `"planned"`: Approximated but fast count algorithm. Uses the Postgres statistics under the hood. `"estimated"`: Uses exact count for low numbers and planned count for high numbers.',
       advanced: true,
     },
+    onError: {
+      type: "eventHandler",
+      argTypes: [{name: 'supabaseProviderError', type: 'object'}],
+      required: false,
+    },
+    skipServerSidePrefetch: {
+      type: "boolean",
+      required: false,
+      defaultValue: false,
+      description: `
+        In the standard configuration of Plasmic (NextJS + Loader API), Plasmic will prefetch data form Supabase on the server before the page containing the SupabaseProvider is rendered (if data is not in cache).
+        If data is in cache, the stale data will be used (no server-side fetch), before the client-side refetch is triggered.
+        This behaviour is normally desirable because of the SEO benefits.
+        However, if you wish to disable server-side prefetch, you can set this prop to TRUE.`,
+      advanced: true
+    }
   }
 };

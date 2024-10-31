@@ -1,6 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { createClient as createClientPrimitive } from "@supabase/supabase-js";
 import { parse, serialize } from "cookie";
+import serverSide from "@/utils/serverSide";
 
 //Helper function to check if setting cookies works
 //This is used to determine if we are running in plasmic studio or preview
@@ -28,11 +29,7 @@ export default function createClient() {
   //Check if we are pre-rendering this component within getStaticProps
   //Using the react-ssr-prepass that standard Plasmic loader API uses in the [[...catchall]].tsx page
   //This happens server-side so cookies and local storage are not available
-  const isPreRenderingOnServer =
-    typeof window === "undefined" &&
-    typeof document === "undefined" &&
-    typeof localStorage === "undefined";
-  if (isPreRenderingOnServer) {
+  if (serverSide()) {
 
     console.log('in getStaticProps')
 

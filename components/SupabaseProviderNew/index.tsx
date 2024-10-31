@@ -11,6 +11,8 @@ import { DataProvider } from "@plasmicapp/host";
 import { v4 as uuid } from "uuid";
 import { useDeepCompareMemo } from "use-deep-compare";
 
+import serverSide from "@/utils/serverSide";
+
 //Import custom createClient that creates the Supabase client based on component render within Plasmic vs Browser
 import createClient from "../../utils/supabase/component";
 
@@ -40,6 +42,7 @@ export interface SupabaseProviderNewProps {
   offset?: number;
   returnCount?: "none" | "exact" | "planned" | "estimated";
   onError: (supabaseProviderError: SupabaseProviderError) => void;
+  skipServerSidePrefetch: boolean;
 }
 
 type SupabaseProviderError = {
@@ -74,6 +77,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
       offset,
       returnCount,
       onError,
+      skipServerSidePrefetch,
     } = props;
 
     // console.log(props)
@@ -86,6 +90,13 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
     const fetchData = async () => {
 
       setFetchError(null);
+
+      // If the user has opted-out of server-side prefetch of data via extractPlasmicQueryData
+      // then we return null instead of running the query to fetch data
+      // This forces the query to run first in the browser
+      if(serverSide() && skipServerSidePrefetch) {
+        return null;
+      }
 
       try {
 
@@ -104,6 +115,9 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
           offset,
           returnCount,
         });
+
+        //Simulate 1 second delay
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         const { data, error, count } = await supabaseQuery;
 
@@ -140,7 +154,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
       [
         queryName, 
         JSON.stringify(memoizedFilters), 
-        JSON.stringify(memoizedOrderBy)
+        JSON.stringify(memoizedOrderBy),
       ], 
       fetchData,
       {
