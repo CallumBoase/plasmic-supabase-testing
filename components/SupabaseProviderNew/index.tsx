@@ -12,14 +12,7 @@ import { v4 as uuid } from "uuid";
 import { useDeepCompareMemo } from "use-deep-compare";
 
 //Import custom createClient that creates the Supabase client based on component render within Plasmic vs Browser
-// import createClient from "../../utils/supabase/component";
-import { createBrowserClient } from "@supabase/ssr";
-
-//An unrealistically simplified createClient without ref to cookies or local storage
-const createClient = () => createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import createClient from "../../utils/supabase/component";
 
 import buildSupabaseQueryWithDynamicFilters, {
   type Filter,
@@ -83,7 +76,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
       onError,
     } = props;
 
-    console.log(props)
+    // console.log(props)
 
     const [fetchError, setFetchError] = useState<SupabaseProviderError | null>(null);
     const memoizedFilters = useDeepCompareMemo(() => filters, [filters]);
