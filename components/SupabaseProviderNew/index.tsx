@@ -62,6 +62,7 @@ interface Actions {
     shouldReturnRow: boolean,
     returnImmediately: boolean
   ): Promise<any>;
+  refetchRows(): Promise<void>;
 }
 
 
@@ -158,7 +159,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
     const {
       data,
       //error - will not use see notes in KnackProvider
-      // mutate,
+      mutate,
       isLoading,
     } = useMutablePlasmicQueryData(
       [
@@ -175,6 +176,10 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
     // Element actions
     useImperativeHandle(ref, () => ({
       addRow: async () => console.log("test"),
+      //Element action to simply refetch the data with the fetcher
+      refetchRows: async () => {
+        mutate();
+      },
     }));
 
     return (

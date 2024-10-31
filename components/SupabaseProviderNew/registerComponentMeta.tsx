@@ -225,5 +225,11 @@ export const SupabaseProviderNewMeta : CodeComponentMeta<SupabaseProviderNewProp
         Whether to simulate random fetch errors when fetching data from Supabase. Useful for testing.`,
       advanced: true
     },
+  },
+  refActions: {
+    refetchRows: {
+      description: "refetch rows from the database",
+      argTypes: [],
+    }
   }
 };
