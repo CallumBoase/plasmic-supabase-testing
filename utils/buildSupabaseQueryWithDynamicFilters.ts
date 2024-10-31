@@ -54,7 +54,7 @@ const buildSupabaseQueryWithDynamicFilters = ({
     if(!columns) throw new Error("Error in buildSupabaseQueryWithDynamicFilters: columns must be a string like '*' or 'id, name' for select operation.");
     if(returnCount === "none" || !returnCount) {
       supabaseQuery = supabase.from(tableName).select(columns);
-    } else if ( ['exact', 'planed', 'estimated'].includes(returnCount) ) {
+    } else if ( ['exact', 'planned', 'estimated'].includes(returnCount) ) {
       supabaseQuery = supabase.from(tableName).select(columns, { count: returnCount });
     }
   } else if (operation === "insert") {
