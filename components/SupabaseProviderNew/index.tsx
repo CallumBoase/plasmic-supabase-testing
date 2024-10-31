@@ -12,6 +12,7 @@ import { v4 as uuid } from "uuid";
 import { useDeepCompareMemo } from "use-deep-compare";
 
 import serverSide from "@/utils/serverSide";
+import getErrMsg from "@/utils/getErrMsg";
 
 //Import custom createClient that creates the Supabase client based on component render within Plasmic vs Browser
 import createClient from "../../utils/supabase/component";
@@ -30,6 +31,14 @@ type Rows = {
   data: Row[] | null;
 };
 
+type SupabaseProviderError = {
+  errorId: string;
+  summary: string;
+  errorMessage: string;
+  actionAttempted: string;
+  rowForSupabase: Row | null;
+};
+
 export interface SupabaseProviderNewProps {
   children: React.ReactNode;
   className?: string;
@@ -44,15 +53,8 @@ export interface SupabaseProviderNewProps {
   onError: (supabaseProviderError: SupabaseProviderError) => void;
   skipServerSidePrefetch: boolean;
   addDelayForTesting: boolean;
+  simulateRandomFetchErrors: boolean;
 }
-
-type SupabaseProviderError = {
-  errorId: string;
-  summary: string;
-  errorObject: any;
-  actionAttempted: string;
-  rowForSupabase: Row | null;
-};
 
 interface Actions {
   addRow(
@@ -80,6 +82,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
       onError,
       skipServerSidePrefetch,
       addDelayForTesting,
+      simulateRandomFetchErrors,
     } = props;
 
     // console.log(props)
@@ -121,6 +124,11 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
         // Add a 1 second delay for testing when indicated
         if (addDelayForTesting) await new Promise((resolve) => setTimeout(resolve, 1000));
 
+        // Simulate random fetch errors for testing when indicated
+        if (simulateRandomFetchErrors && Math.random() > 0.5) {
+          throw new Error(`Simulated random fetch error, timestamp: ${new Date().toISOString()}`);
+        }
+
         const { data, error, count } = await supabaseQuery;
 
         if (error) {
@@ -134,7 +142,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
         const supabaseProviderError = {
           errorId: uuid(),
           summary: "Error fetching records",
-          errorObject: err,
+          errorMessage: getErrMsg(err),
           actionAttempted: "read",
           rowForSupabase: null,
         };

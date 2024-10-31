@@ -196,6 +196,7 @@ export const SupabaseProviderNewMeta : CodeComponentMeta<SupabaseProviderNewProp
       type: "eventHandler",
       argTypes: [{name: 'supabaseProviderError', type: 'object'}],
       required: false,
+      description: 'Event handler for when an error occurs with fetch or mutate of data. Within this handler you can access the error that occured via the variable "supabaseProviderError"'
     },
     skipServerSidePrefetch: {
       type: "boolean",
@@ -213,7 +214,15 @@ export const SupabaseProviderNewMeta : CodeComponentMeta<SupabaseProviderNewProp
       required: false,
       defaultValue: false,
       description: `
-        Turn this ON to add a 1 second delay when fetching or mutating data from Supabase. Useful for testing purposes.`,
+        Whether to add a 1 second delay when fetching or mutating data from Supabase. Useful for testing.`,
+      advanced: true
+    },
+    simulateRandomFetchErrors: {
+      type: "boolean",
+      required: false,
+      defaultValue: false,
+      description: `
+        Whether to simulate random fetch errors when fetching data from Supabase. Useful for testing.`,
       advanced: true
     },
   }
