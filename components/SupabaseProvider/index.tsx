@@ -252,8 +252,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         let query = supabase.from(tableName).insert(rowForSupabase);
 
         //typescript ignore next line because you don't like the dynamic query build, however we know it's safe to run a select on an insert
-        //@ts-ignore
+        
         if (shouldReturnRow) {
+          //@ts-ignore
           query = query.select();
         }
 
@@ -303,8 +304,8 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
           .eq(uniqueIdentifierField, rowForSupabase[uniqueIdentifierField]);
 
         //typescript ignore next line because you don't like the dynamic query build, however we know it's safe to run a select on an update
-        //@ts-ignore
         if (shouldReturnRow) {
+          //@ts-ignore
           query = query.select();
         }
 
@@ -348,6 +349,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         //typescript ignore next line because you don't like the dynamic query build, however we know it's safe to run a select on a delete
         //@ts-ignore
         if (shouldReturnRow) {
+          //@ts-ignore
           query = query.select();
         }
 
@@ -493,6 +495,7 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         }
 
         const mutateFunction = () =>
+          //@ts-ignore
           mutate(addRowWrapper, {
             populateCache: false,
             revalidate: true,
@@ -702,7 +705,9 @@ export const SupabaseProvider = forwardRef<Actions, SupabaseProviderProps>(
         <DataProvider
           name={queryName}
           data={{
+            //@ts-ignore
             data: data?.data,
+            //@ts-ignore
             count: data?.count,
             isLoading,
             isMutating,
