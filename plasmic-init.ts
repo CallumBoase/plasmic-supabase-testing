@@ -5,12 +5,12 @@ import {
   SupabaseProviderMeta,
   SupabaseProviderNew,
   SupabaseProviderNewMeta,
-  SupabaseUserGlobalContext,
-  SupabaseUserGlobalContextMeta,
-  SupabaseUppyUploader,
-  SupabaseUppyUploaderMeta,
-  SupabaseUppyHOC,
-  SupabaseUppyHOCMeta
+  // SupabaseUserGlobalContext,
+  // SupabaseUserGlobalContextMeta,
+  // SupabaseUppyUploader,
+  // SupabaseUppyUploaderMeta,
+  // SupabaseUppyHOC,
+  // SupabaseUppyHOCMeta
 } from "."
 
 export const PLASMIC = initPlasmicLoader({
@@ -42,6 +42,6 @@ export const PLASMIC = initPlasmicLoader({
 
 //Register components
 PLASMIC.registerComponent(SupabaseProvider, SupabaseProviderMeta);
-PLASMIC.registerComponent(SupabaseUppyUploader, SupabaseUppyUploaderMeta);
+// PLASMIC.registerComponent(SupabaseUppyUploader, SupabaseUppyUploaderMeta);
 PLASMIC.registerComponent(SupabaseProviderNew, SupabaseProviderNewMeta);
 // PLASMIC.registerComponent(SupabaseUppyHOC, SupabaseUppyHOCMeta);
