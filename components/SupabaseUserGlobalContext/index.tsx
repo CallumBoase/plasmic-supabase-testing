@@ -120,7 +120,7 @@ export const SupabaseUserGlobalContext = ({children, defaultRedirectOnLoginSucce
       //signUp
       signup: async (email: string, password: string, successRedirect: string, emailRedirect?: string, userMetadata?: UserMetadata) => {
         try {
-          const supabase = await createClient();
+          const supabase = createClient();
           let options = Object.assign({},
             userMetadata && { data: userMetadata },
             emailRedirect && { emailRedirectTo: emailRedirect },
