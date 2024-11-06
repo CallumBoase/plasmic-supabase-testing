@@ -1,6 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { createClient as createClientPrimitive } from "@supabase/supabase-js";
-import { parse, serialize } from "cookie";
+import { parse } from "cookie";
 import serverSide from "@/utils/serverSide";
 
 //Helper function to check if setting cookies works
@@ -43,59 +43,42 @@ export default function createClient() {
 
   } else {
 
-    // Render the browser version of the SupabaseProvider
-    // With modification to read session from localStorage if operating in Plasmic Studio
-    supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        //Override the default behaviour of how supabase handles storing of session data of logged in user
-        //Reason: Plasmic studio & Plasmic studio -> Preview runs the app in an iframe which doesn't seem to support setting or getting of cookies
-        //Therefore, when running in plasmic studio, we store session data in localStorage instead
-        //However, we retain default behaviour of using cookies outside of Plasmic studio for security & functionality benefits
-        cookies: {
-          //Override the default behaviour of how supabase gets session data of logged in user
-          get: (key) => {
-            if (cookiesAvailable()) {
-              //Cookies are available, so we get session data from cookies
-              //This is the default behaviour of createBrowserClient
-              //This option should run, except when editing the app in plasmic studio or previewing it from studio
-              const cookies = parse(document.cookie);
-              return cookies[key];
-            } else {
-              //Cookies are not available, so we're in plasmic studio or plasmic studio preview
-              //Look for session data in localStorage instead (the set() function below should have saved it there)
-              return localStorage.getItem(key);
-            }
-          },
+    // We are running in the browser
 
-          //Override the default behaviour of how supabase saves session data of logged in user
-          set: (key, value, options) => {
-            if (cookiesAvailable()) {
-              //Cookies are available, so we are running the app normally, not in plasmic studio / plasmic preview
-              //Store session data in cookies
-              //This is the default behaviour of createBrowserClient
-              //ONLY this method will run when cookies are available, improving security
-              document.cookie = serialize(key, value, options);
-            } else {
-              //Cookies are not available, so we're in plasmic studio or plasmic studio preview
-              //Save session info in localStorage instead
-              localStorage.setItem(key, value);
-            }
-          },
+    if(cookiesAvailable()) {
 
-          //Override the default behaviour of how supabase removes session data of logged in user
-          //Remove session data from both cookies and localStorage (if present)
-          remove: (key, options) => {
-            //Remove the session data from cookies (if present) (default behaviour)
-            document.cookie = serialize(key, "", options);
-            //Remove the session data from localStorage (if present)
-            localStorage.removeItem(key);
-          },
-        },
-      }
-    );
+      //Cookies are available, so we use the default behaviour of createBrowserClient
+      //This option will run when NOT editing the app in plasmic studio or previewing it from studio
+      supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      )
+
+    } else {
+
+      // Cookies are not available, so we use a modified version of createBrowserClient compatible with plasmic studio or preview
+      // This option will run when editing the app in plasmic studio or previewing it from studio
+      // We store & retrieve session data in localStorage instead of normal cookies
+
+      supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return Object.keys(localStorage).map(name => ({ name, value: localStorage.getItem(name) || '' }))
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value }) => localStorage.setItem(name, value))
+            }
+
+          }
+        }
+      )
+
+    }
   }
 
   return supabase;
+
 }
