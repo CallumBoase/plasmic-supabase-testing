@@ -147,11 +147,17 @@ export const SupabaseUserGlobalContext = ({children, defaultRedirectOnLoginSucce
         }
       },
       //resetPassword
-      resetPasswordForEmail: async (email: string) => {
+      resetPasswordForEmail: async (email: string, redirectTo?: string) => {
         try {
-          const supabase = await createClient();
+
+          const options = {
+            redirectTo: redirectTo || undefined
+          }
+
+          const supabase = createClient();
           const { error } = await supabase.auth.resetPasswordForEmail(
-            email // this auth function takes its parameters slightly differently. It doesn't accept named parameters like the other supabase.auth functions.
+            email, // this auth function takes its parameters slightly differently. It doesn't accept named parameters like the other supabase.auth functions.
+            options
           );
           if (error) throw error;
           return;
