@@ -98,6 +98,7 @@ export const SupabaseProviderNew = forwardRef<Actions, SupabaseProviderNewProps>
       setFetchError(null);
 
       // If the user has opted-out of server-side prefetch of data via extractPlasmicQueryData
+      // and we are currently in the server-side environment
       // then we return null instead of running the query to fetch data
       // This forces the query to run first in the browser
       if(serverSide() && skipServerSidePrefetch) {
