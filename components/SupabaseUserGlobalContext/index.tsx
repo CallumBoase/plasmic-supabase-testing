@@ -116,12 +116,20 @@ export const SupabaseUserGlobalContext = ({children, defaultRedirectOnLoginSucce
       },
 
       //requestMagicLinkToEmail
-      requestMagicLinkToEmail: async (email: string, successRedirect?: string, emailRedirect?: string) => {
+      requestMagicLinkToEmail: async (
+        email: string, 
+        createUserIfNotFound: boolean, 
+        userMetadata?: UserMetadata,
+        successRedirect?: string, 
+        emailRedirect?: string
+      ) => {
         try {
           const supabase = createClient();
 
           const options = {
-            emailRedirectTo: emailRedirect || undefined
+            emailRedirectTo: emailRedirect || undefined,
+            data: userMetadata || undefined,
+            shouldCreateUser: createUserIfNotFound ? true : false
           }
 
           const { error } = await supabase.auth.signInWithOtp({

@@ -32,6 +32,16 @@ export const SupabaseUserGlobalContextMeta : GlobalContextMeta<SupabaseUserGloba
           type: "string",
         },
         {
+          name: "createUserIfNotFound",
+          type: "boolean",
+          displayName: "If the email does not belong to an existing user, should a new user be signed up?"
+        },
+        {
+          name: "userMetadata",
+          displayName: "Optional Custom user metadata if user is signed up (object with key:value pairs)",
+          type: "object"
+        },
+        {
           name: "successRedirect",
           type: "string",
           displayName: "Optional URL to redirect to if request succeeds. Leave blank to stay on same page."
