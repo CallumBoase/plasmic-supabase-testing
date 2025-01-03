@@ -107,5 +107,39 @@ export const SupabaseUserGlobalContextMeta : GlobalContextMeta<SupabaseUserGloba
         },
       ],
     },
+    updateUser: {
+      parameters: [
+        {
+          name: "password",
+          type: "string",
+          displayName: "New password value (optional)"
+        },
+        {
+          name: "email",
+          type: "string",
+          displayName: "New email value (optional)"
+        },
+        {
+          name: "phone",
+          type: "string",
+          displayName: "New phone value (optional)"
+        },
+        {
+          name: "userMetadata",
+          displayName: "New user metadata (object with key:value pairs) (optional)",
+          type: "object"
+        },
+        {
+          name: "emailRedirect",
+          displayName: "Optional URL to redirect the user to when they click the link to confirm email address change",
+          type: "string"
+        },
+        {
+          name: "nonce",
+          type: "string",
+          displayName: "New nonce value (optional)"
+        }
+      ],
+    },
   },
 };

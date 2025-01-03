@@ -240,6 +240,8 @@ export const SupabaseUserGlobalContext = ({children, defaultRedirectOnLoginSucce
             options
           );
           if (error) throw error;
+          await getUserAndSaveToState();
+          setError(null);
           return;
         } catch (e) {
           setError(getErrMsg(e))
@@ -253,11 +255,48 @@ export const SupabaseUserGlobalContext = ({children, defaultRedirectOnLoginSucce
         // i.e. requiring an expiring token to be passed in the /changepassword URL, validating the token against the supabase DB, only displaying the page if the toekn was valid, otherwise redirect
       updateUserPassword: async (password: string) => {
         try {
-          const supabase = await createClient();
+          const supabase = createClient();
           const { error } = await supabase.auth.updateUser({
             password: password
           });
           if (error) throw error;
+          await getUserAndSaveToState();
+          setError(null);
+          return;
+        } catch (e) {
+          setError(getErrMsg(e))
+          return;
+        }
+      },
+      // Update user
+      // This action/function assumes the user has an active session (either by having "Logged in" or clicking the password reset confirmation from a recovery email)
+      // Full-option user update function using same underlying method as updateUserPassword
+      updateUser: async (
+        password?: string, 
+        email?: string, 
+        phone?: string, 
+        userMetadata?: UserMetadata, 
+        emailRedirect?: string,
+        nonce?: string
+      ) => {
+        try {
+          const supabase = createClient();
+          const { error } = await supabase.auth.updateUser(
+            {
+              password: password || undefined,
+              email: email || undefined,
+              phone: phone || undefined,
+              data: userMetadata || undefined,
+              nonce: nonce || undefined,
+            },
+            {
+              emailRedirectTo: emailRedirect || undefined
+            }
+          );
+          if (error) throw error;
+          await getUserAndSaveToState();
+          setError(null);
+          return;
         } catch (e) {
           setError(getErrMsg(e))
           return;
