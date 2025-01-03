@@ -7,9 +7,8 @@ export { SupabaseProviderMeta } from "./components/SupabaseProvider/registerComp
 export { SupabaseProviderNew } from "./components/SupabaseProviderNew";
 export { SupabaseProviderNewMeta } from "./components/SupabaseProviderNew/registerComponentMeta";
 
-// export { SupabaseUppyUploader } from "./components/SupabaseUppyUploader"
-// export { SupabaseUppyUploaderMeta } from "./components/SupabaseUppyUploader/registerComponentMeta"
-// export { SupabaseUppyHOC } from "./components/SupabaseUppyUploader"
-// export { SupabaseUppyHOCMeta } from "./components/SupabaseUppyUploader/registerComponentMeta"
+export { SupabaseUppyUploader } from "./components/SupabaseUppyUploader";
+export { SupabaseUppyUploaderMeta } from "./components/SupabaseUppyUploader/registerComponentMeta";
 
-export type { AuthorizationCheckFunction, RoutePath } from "./utils/authorizationCheckFunctionTypes";
+export { SupabaseStorageGetSignedUrl } from "./components/SupabaseStorageGetSignedUrl";
+export { SupabaseStorageGetSignedUrlMeta } from "./components/SupabaseStorageGetSignedUrl/registerComponentMeta";
