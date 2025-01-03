@@ -61,8 +61,8 @@ export const SupabaseUserGlobalContextMeta : GlobalContextMeta<SupabaseUserGloba
     resetPasswordForEmail: {
       parameters: [
         {
-          name: "email",
-          type: "string",
+        name: "email",
+        type: "string",
         },
         {
           name: "redirectTo",
