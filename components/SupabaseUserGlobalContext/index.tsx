@@ -114,6 +114,49 @@ export const SupabaseUserGlobalContext = ({children, defaultRedirectOnLoginSucce
           return;
         }
       },
+
+      //requestMagicLinkToEmail
+      requestMagicLinkToEmail: async (email: string, successRedirect?: string, emailRedirect?: string) => {
+        try {
+          const supabase = createClient();
+
+          const options = {
+            emailRedirectTo: emailRedirect || undefined
+          }
+
+          const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options
+          });
+
+          // Throw errors if present
+          if (error) {
+            throw error;
+          }
+
+          // Save the session to state
+          // Unless there's already a logged in user,
+          // It's likely there will be no session to save to state
+          await getUserAndSaveToState();
+
+          //Reset errors to nothing since it succeeded
+          setError(null);
+
+          //Redirect on success
+          //Reload is not required
+          if(successRedirect){
+            window.location.href = successRedirect;
+          }
+          
+          return;
+
+        } catch (e) {
+          setError(getErrMsg(e))
+          return;
+        }
+
+      },
+
       //Logout
       logout: async (successRedirect: string) => {
         try {

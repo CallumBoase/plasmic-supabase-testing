@@ -25,6 +25,24 @@ export const SupabaseUserGlobalContextMeta : GlobalContextMeta<SupabaseUserGloba
         }
       ],
     },
+    requestMagicLinkToEmail: {
+      parameters: [
+        {
+          name: "email",
+          type: "string",
+        },
+        {
+          name: "successRedirect",
+          type: "string",
+          displayName: "Optional URL to redirect to if request succeeds. Leave blank to stay on same page."
+        },
+        {
+          name:"emailRedirect",
+          type: "string",
+          displayName: "Optional URL of page to redirect to when user clicks the emailed OTP link"
+        }
+      ],
+    },
     signup: {
       parameters: [
         {
